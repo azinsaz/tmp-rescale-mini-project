@@ -1,0 +1,38 @@
+[project]
+name = "jobs-backend"
+version = "0.1.0"
+description = "Job Management Dashboard backend (Django + Ninja, async)"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "Django>=5.2,<5.3",
+    "django-ninja==1.6.2",
+    "psycopg[binary]>=3.2,<3.3",
+    "uvicorn[standard]>=0.32",
+    "colorlog>=6.8",
+    "python-json-logger>=3.2",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3",
+    "pytest-django>=4.9",
+    "pytest-asyncio>=0.25",
+    "pytest-cov>=6.0",
+    "factory-boy>=3.3",
+    "httpx>=0.28",
+    "ruff>=0.8",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+extend-exclude = ["migrations", ".venv"]
+
+[tool.ruff.lint]
+# Sensible default set for a Django/Ninja project. We're not adding new lints
+# to existing code retroactively — just guard rails for future commits.
+select = ["E", "F", "W", "I", "B", "UP"]
+ignore = [
+    "E501",  # line-length handled by formatter
+    "B008",  # function-call-in-default-argument is fine for FastAPI/Ninja-style deps
+]
