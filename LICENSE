@@ -1,0 +1,22 @@
+Copyright (c) 2026 Ali. All rights reserved.
+
+This repository was created solely for the purpose of a job interview
+take-home assignment with Rescale. It is shared with Rescale and authorized
+reviewers strictly for evaluation of the author's work.
+
+Permission is NOT granted to:
+
+  - redistribute this code, in whole or in part, in source or compiled form;
+  - mirror, fork, or republish this repository on any public or private
+    hosting platform other than the original review channel;
+  - use any portion of this code in a commercial product or service;
+  - use this code as the basis of training data for machine-learning models.
+
+Reviewers may clone, build, run, and inspect the code locally as part of
+their evaluation. All other rights are reserved by the author.
+
+The code is provided "as is", without warranty of any kind, express or
+implied, including but not limited to the warranties of merchantability,
+fitness for a particular purpose, and non-infringement. In no event shall
+the author be liable for any claim, damages, or other liability arising
+from, out of, or in connection with the code or its use.

@@ -1,0 +1,55 @@
+# Environment
+.env
+.env.local
+
+# Local Claude Code agent state
+.claude/
+
+# Root-level scratch dumps (e.g. session export .txt files at repo root).
+# Note: this is intentionally root-only — docs/sessions/*.txt are kept.
+/*.txt
+
+# Logs
+logs/
+*.log
+*.log.*
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+*.egg-info/
+.venv/
+venv/
+
+# Node
+node_modules/
+dist/
+build/
+.vite/
+
+# Test artifacts
+playwright-report/
+test-results/
+coverage/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Take-home brief — problem statement, not part of the deliverable.
+# Root-anchored so it doesn't shadow anything in docs/.
+/Full-Stack-Engineer-Take-Home-Problem-Job-Management-Dashboard.md
+/Full-Stack-Engineer-Take-Home-Problem-Job-Management-Dashboard.pdf.pdf
+
+# Original logo source — canonical copies live at frontend/public/ and docs/design/assets/
+rescale-inc-logo-vector.png
