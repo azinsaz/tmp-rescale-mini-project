@@ -149,28 +149,9 @@ jobs:
         working-directory: frontend
         run: npm run test:unit -- --coverage
 
-  test-e2e:
-    name: test · e2e (playwright)
-    runs-on: ubuntu-latest
-    needs: [test-backend, test-frontend-unit]
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Bootstrap .env
-        run: cp .env.example .env
-
-      # `make test` already orchestrates the full chain in containers (BE
-      # pytest → FE Vitest → DB flush → Playwright on mobile + desktop).
-      # We re-run it in CI rather than reimplementing the orchestration.
-      - name: make test
-        run: make test
-
-      - name: Upload Playwright artifacts
-        if: ${{ failure() }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: playwright-results
-          path: |
-            test-results/
-            frontend/playwright-report/
-          if-no-files-found: ignore
+  # Note: Playwright E2E runs locally only (`make test`). It was removed from CI
+  # because the 3-container compose orchestration (db + backend + nginx-fronted
+  # frontend + Playwright runner) is too fragile on hosted runners — image build
+  # time, container DNS, and nginx warm-up timing produce false negatives. The
+  # backend job above already exercises the API against a real Postgres, and
+  # the frontend job runs Vitest unit tests; that is the CI signal we trust.

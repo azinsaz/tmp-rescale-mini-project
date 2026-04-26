@@ -151,8 +151,8 @@ make ci                            # alias for the above
 
 ## Time spent
 
-~ 5 hours initial implementation + ~1 hour for the drawer/quick-change/sort
-redesign + ~30 min for CI/CD scaffold and finishing touches.
+~ 5 hours initial implementation + ~30 min for CI/CD scaffold and finishing touches.
+Used Opus 4.7 with max reasoning effort for the initial planning and the spec design which took almost 2 hours, then the implementation was pretty straightforward
 
 ## AI usage
 
