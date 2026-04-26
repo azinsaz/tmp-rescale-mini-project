@@ -1,0 +1,11 @@
+FROM mcr.microsoft.com/playwright:v1.58.2-jammy
+WORKDIR /app
+
+COPY package.json package-lock.json* ./
+RUN npm ci
+
+COPY . .
+RUN mkdir -p test-results playwright-report && chown -R pwuser:pwuser /app
+
+USER pwuser
+CMD ["npx", "playwright", "test"]
