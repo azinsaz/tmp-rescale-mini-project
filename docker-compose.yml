@@ -1,0 +1,81 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${JOBS_DB_NAME}
+      POSTGRES_USER: ${JOBS_DB_USER}
+      POSTGRES_PASSWORD: ${JOBS_DB_PASSWORD}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 2s
+      timeout: 5s
+      retries: 15
+      start_period: 5s
+
+  backend:
+    build: ./backend
+    environment:
+      POSTGRES_HOST: db
+      POSTGRES_PORT: 5432
+      JOBS_DB_NAME: ${JOBS_DB_NAME}
+      JOBS_DB_USER: ${JOBS_DB_USER}
+      JOBS_DB_PASSWORD: ${JOBS_DB_PASSWORD}
+      DJANGO_SETTINGS_MODULE: config.settings
+      JOBS_SECRET_KEY: ${JOBS_SECRET_KEY}
+      JOBS_DEBUG: ${JOBS_DEBUG:-False}
+      JOBS_ENV: ${JOBS_ENV:-dev}
+      JOBS_LOG_LEVEL: ${JOBS_LOG_LEVEL:-INFO}
+      JOBS_LOG_FORMAT: ${JOBS_LOG_FORMAT:-text}
+      LOG_DIR: /app/logs
+      SERVICE_NAME: ${SERVICE_NAME:-api}
+    volumes:
+      - ./logs:/app/logs
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8000/api/health/"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+    ports:
+      - "8000:8000"
+
+  frontend:
+    build: ./frontend
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1/ >/dev/null || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    ports:
+      - "8080:80"
+
+  vitest:
+    profiles: ["test"]
+    build:
+      context: ./frontend
+      target: src
+    command: ["npm", "run", "test:unit", "--", "--coverage"]
+    environment:
+      CI: "true"
+
+  playwright:
+    profiles: ["test"]
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.playwright
+    depends_on:
+      frontend:
+        condition: service_healthy
+    environment:
+      PLAYWRIGHT_TEST_BASE_URL: http://frontend:80
+
+volumes:
+  db-data:
