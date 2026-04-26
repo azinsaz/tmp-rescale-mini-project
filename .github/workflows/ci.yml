@@ -1,0 +1,176 @@
+name: CI
+
+# Runs on every push and PR. Stages: lint → test. Frontend and backend run
+# in independent jobs so a failure on one side doesn't block the other from
+# producing useful signal.
+
+on:
+  push:
+    branches: ["**"]
+    tags-ignore: ["**"]   # tag pushes go through the deploy workflow instead
+  pull_request:
+    branches: ["**"]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ─── Lint stage ────────────────────────────────────────────────────────────
+
+  lint-backend:
+    name: lint · backend
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: "0.5.x"
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install backend deps (incl. dev)
+        working-directory: backend
+        run: uv sync --frozen --group dev
+
+      - name: Ruff lint
+        working-directory: backend
+        run: uv run --group dev ruff check .
+
+      - name: Ruff format check
+        working-directory: backend
+        run: uv run --group dev ruff format --check .
+
+      # Lightweight type check: Django doesn't ship type stubs, so we just
+      # parse-compile every .py to catch syntax errors. Real mypy/pyright
+      # would need stub configuration that's out of scope for this scaffold.
+      - name: Syntax compile-check
+        working-directory: backend
+        run: uv run --group dev python -m compileall -q .
+
+  lint-frontend:
+    name: lint · frontend
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend deps
+        working-directory: frontend
+        run: npm ci
+
+      - name: TypeScript type-check
+        working-directory: frontend
+        run: npx tsc --noEmit
+
+      - name: ESLint
+        working-directory: frontend
+        run: npm run lint
+
+      - name: Prettier (check)
+        working-directory: frontend
+        run: npx prettier --check .
+
+  # ─── Test stage ────────────────────────────────────────────────────────────
+
+  test-backend:
+    name: test · backend (pytest)
+    runs-on: ubuntu-latest
+    needs: lint-backend
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: jobs
+          POSTGRES_USER: jobs
+          POSTGRES_PASSWORD: jobs
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U jobs -d jobs"
+          --health-interval 2s
+          --health-timeout 5s
+          --health-retries 15
+    env:
+      DJANGO_SETTINGS_MODULE: config.settings
+      JOBS_SECRET_KEY: ci-secret-key-not-for-prod
+      JOBS_DEBUG: "False"
+      JOBS_ENV: ci
+      JOBS_DB_NAME: jobs
+      JOBS_DB_USER: jobs
+      JOBS_DB_PASSWORD: jobs
+      POSTGRES_HOST: localhost
+      POSTGRES_PORT: "5432"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v3
+        with:
+          version: "0.5.x"
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install backend deps
+        working-directory: backend
+        run: uv sync --frozen --group dev
+
+      - name: Run pytest (unit + integration)
+        working-directory: backend
+        run: uv run --group dev pytest -q --cov=jobs --cov=config --cov-fail-under=80
+
+  test-frontend-unit:
+    name: test · frontend (vitest)
+    runs-on: ubuntu-latest
+    needs: lint-frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend deps
+        working-directory: frontend
+        run: npm ci
+
+      - name: Vitest
+        working-directory: frontend
+        run: npm run test:unit -- --coverage
+
+  test-e2e:
+    name: test · e2e (playwright)
+    runs-on: ubuntu-latest
+    needs: [test-backend, test-frontend-unit]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Bootstrap .env
+        run: cp .env.example .env
+
+      # `make test` already orchestrates the full chain in containers (BE
+      # pytest → FE Vitest → DB flush → Playwright on mobile + desktop).
+      # We re-run it in CI rather than reimplementing the orchestration.
+      - name: make test
+        run: make test
+
+      - name: Upload Playwright artifacts
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-results
+          path: |
+            test-results/
+            frontend/playwright-report/
+          if-no-files-found: ignore
