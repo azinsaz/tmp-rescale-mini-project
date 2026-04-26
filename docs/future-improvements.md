@@ -159,13 +159,13 @@ dev keeps the `.env` flow.
 
 ## 4. Container registry, CD pipeline, and cloud deployment
 
-**Gap.** `deploy.yml` exists but is a scaffold. There is no real
+**Gap.** `cd.yml` exists but is a scaffold. There is no real
 registry push, no smoke-test against a staging environment, no
 production target.
 
 **Proposed change.** Three concrete additions:
 
-1. **Registry push.** On a SemVer tag, `deploy.yml` builds the backend
+1. **Registry push.** On a SemVer tag, `cd.yml` builds the backend
    and frontend images, tags them as
    `ghcr.io/<owner>/jobs-backend:vX.Y.Z` (and `:latest`) and
    `ghcr.io/<owner>/jobs-frontend:vX.Y.Z`, and pushes via OIDC-issued

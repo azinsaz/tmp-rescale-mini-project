@@ -55,11 +55,6 @@ match the real dependencies in the `Makefile`.
 | `make seed` | Seeds **1 000 000 jobs** (~1–2 min on a laptop) — the design target for the millions-of-jobs scenario. Requires `make up`. |
 | `make ci` | Mirrors GitHub Actions (`.github/workflows/ci.yml`) locally. Runs `./scripts/pre-commit.sh` end-to-end: backend lint (`ruff check` + `ruff format --check` + `compileall`), frontend lint (`tsc --noEmit` + `eslint` + `prettier --check`), then `make test`. |
 
-`make test` is the single most load-bearing command in this repo —
-the spec calls it out as the gate before any other evaluation. Every
-infrastructure decision is shaped around making it fast, hermetic, and
-self-cleaning. See [ADR-018](docs/ADR.md#adr-018--make-test-is-the-cold-machine-evaluation-contract).
-
 ## Architecture (one paragraph)
 
 Django 5.2 + Django Ninja 1.6 backend on async ASGI (Uvicorn),
@@ -186,11 +181,10 @@ GitHub Actions workflows under `.github/workflows/`:
   Frontend lint = `tsc --noEmit` + `eslint` + `prettier --check`.
   Tests run as separate jobs (BE pytest, FE Vitest, Playwright E2E
   via `make test`).
-- `deploy.yml` — runs on a SemVer tag push (`v*.*.*`). Same lint + test
-  gates, then placeholder `deploy-backend` and `deploy-frontend` jobs
-  that build the Docker images, smoke-test them, and leave clearly
-  marked `TODO(deploy)` blocks for the registry push and rollout step
-  (no real cloud target wired up — see
+- `cd.yml` — runs on a SemVer tag push (`v*.*.*`). Builds the backend
+  and frontend Docker images at the tagged commit and attaches
+  `CHANGELOG.md` to the GitHub Release. Registry push and rollout are
+  left as `TODO(deploy)` (no real cloud target wired up — see
   [`docs/future-improvements.md` §4](docs/future-improvements.md#4-container-registry-cd-pipeline-and-cloud-deployment)).
 
 To run the same checks locally before pushing:
