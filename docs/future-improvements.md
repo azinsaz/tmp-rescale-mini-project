@@ -31,6 +31,7 @@ warrant its own ADR, that is called out.
 14. [Schema evolution: state-machine constraints on status transitions](#14-schema-evolution-state-machine-constraints-on-status-transitions)
 15. [Disaster recovery: backups, point-in-time restore, runbooks](#15-disaster-recovery-backups-point-in-time-restore-runbooks)
 16. [Accessibility and i18n](#16-accessibility-and-i18n)
+17. [Richer commit messages and PR descriptions](#17-richer-commit-messages-and-pr-descriptions)
 
 ---
 
@@ -506,3 +507,49 @@ support, or a screen-reader test pass.
   aware out of the box.
 - **RTL.** Tailwind's logical properties (`ms-*`, `me-*`, `start`,
   `end`) handle most cases; the design tokens already lean on them.
+
+---
+
+## 17. Richer commit messages and PR descriptions
+
+**Gap.** The commit log on this repo is intentionally terse — short
+subject lines, almost no bodies. That is consistent with my personal
+preference for keeping rationale in the diff and the PR description
+rather than the commit body, but in this take-home the PR descriptions
+are also thin, which means the *why* behind several non-obvious
+choices lives only in the ADR and CLAUDE.md rather than in the git
+history itself. A new contributor running `git log -p` would not
+recover the full reasoning chain.
+
+**Proposed change.** Adopt a lightweight Conventional Commits-style
+contract enforced by a commit hook, with bodies expected on anything
+non-trivial:
+
+- Subject: `<type>(<scope>): <imperative summary>` capped at ~72
+  chars (e.g., `feat(jobs): denormalize current_status on PATCH`).
+- Body: one short paragraph on **why**, plus a `Refs:` line pointing
+  to the relevant ADR / spec task / GitHub issue.
+- PR description template that mirrors the commit body and adds a
+  test-plan checklist (the GitHub PR template in this repo is a
+  starting point, but the body sections are not enforced).
+
+The reason this didn't happen in the take-home is honest: I did not
+spend the time to instruct Claude on the commit-message conventions I
+would have applied to a production repo. The model defaults to
+short, descriptive subjects (which matches my personal preference and
+is captured in my global Claude memory), and I let that default ride
+because the gating criterion was `make test` passing on a cold
+machine, not commit archaeology. On a real project, the
+prompt-engineering investment for commit conventions is small and
+the payoff compounds — every future bisect, every future onboard
+benefits — so it would land in the first sprint.
+
+**Trade-offs.**
+
+- Slightly more friction per commit. Mitigated by a `commitlint` hook
+  and a PR template that pre-fills the structure.
+- The model occasionally produces verbose bodies that need trimming;
+  a one-line "keep it under 6 lines, lead with *why*" instruction in
+  CLAUDE.md handles this.
+- None of this changes the runtime; it is purely a process
+  investment.

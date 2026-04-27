@@ -2,8 +2,7 @@
 
 Take-home implementation. Manage computational jobs (create, view,
 update status, delete) with a per-job status history. Implements the
-core requirements **and all five stretch goals** (history view, filter
-+ multi-field sort, distinct detail URL, FE unit tests, BE unit tests).
+core requirements **and all five stretch goals** (history view, filter + multi-field sort, distinct detail URL, FE unit tests, BE unit tests).
 
 The headline design and engineering decisions are recorded in three
 companion docs that this README links into directly:
@@ -54,6 +53,7 @@ match the real dependencies in the `Makefile`.
 | `make seed-bench` | Seeds the running stack with **100 000 jobs** (~5 s on a laptop) for `EXPLAIN` benchmarking. Requires `make up` first. |
 | `make seed` | Seeds **1 000 000 jobs** (~1–2 min on a laptop) — the design target for the millions-of-jobs scenario. Requires `make up`. |
 | `make ci` | Mirrors GitHub Actions (`.github/workflows/ci.yml`) locally. Runs `./scripts/pre-commit.sh` end-to-end: backend lint (`ruff check` + `ruff format --check` + `compileall`), frontend lint (`tsc --noEmit` + `eslint` + `prettier --check`), then `make test`. |
+|  |  |
 
 ## Architecture (one paragraph)
 
@@ -213,11 +213,11 @@ make ci                           # alias for the above
 
 ## Time spent
 
-- ~ 2 hours: Phase 1 planning (Opus 4.7 with maximum reasoning effort) — locked the stack, the API contract, and the workflow before any code.
-- ~ 5 hours: spec-driven implementation across the backend and frontend streams.
+- ~ 2.5 hours: Phase 1 planning and spec design (Opus 4.7 with maximum thinking effort). The model choice was deliberate — Opus 4.7 at max reasoning produces a much tighter plan and design doc, but it is materially slower per turn than Opus 4.6. The same plan-and-spec pass on Opus 4.6 would likely have completed in well under an hour, and the whole project in under 4 hours total. I traded wall-clock for upfront rigor on the planning artifacts.
+- ~ 2.5 hours: spec-driven implementation across the backend and frontend streams (dropped to sonnet 4.6 once the plan was locked).
 - ~ 30 min: CI/CD scaffold, then the README, ADR, perf, and future-improvements documentation.
 
-Total: roughly 7.5 hours of focused work.
+Total: roughly 5.5 hours of focused work.
 
 ---
 
@@ -454,11 +454,18 @@ Worth being equally specific:
   factories, Vitest mocks, Playwright fixtures — generation is
   faster than typing and the diffs are short enough to review at
   speed.
-- **Mechanical refactors.** The `simplify` skill pass on every
-  implementation diff caught real over-abstraction multiple times
-  (helpers used once, parameters that defaulted to the only value
-  ever passed, error handlers that re-wrapped errors with no added
-  context).
+- **Mechanical refactors.** The **`simplify` skill from Anthropic's
+  official `code-simplifier` plugin** was the single most-used tool in
+  the project after the spec workflow itself. I ran it on every
+  implementation diff (and several times mid-task when something felt
+  bloated) specifically to fight the model's natural tendency to
+  over-engineer. It caught real waste repeatedly: helpers used once,
+  parameters that defaulted to the only value ever passed, error
+  handlers that re-wrapped errors with no added context, premature
+  abstractions introduced "for future flexibility" that the spec did
+  not ask for. Treating simplification as a first-class, repeated
+  pass — not a one-time cleanup — is what kept the surface area
+  honest.
 
 ### 8. What I would do differently next time
 
